@@ -8,14 +8,35 @@ use Illuminate\Support\Facades\View;
 
 class ExportBladeToHtml extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'export:blade {--localhost : Whether to use localhost URL}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Export Blade templates to static HTML';
 
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
     public function __construct()
     {
         parent::__construct();
     }
 
+    /**
+     * Execute the console command.
+     *
+     * @return int | void
+     */
     public function handle()
     {
         $this->warn('Exporting Blade templates to static HTML...');
@@ -68,9 +89,11 @@ class ExportBladeToHtml extends Command
             }
 
             $minifiedHtml = preg_replace([
+                '/<script type="module" src="http:\/\/\[::1\]:5173\/@vite\/client"><\/script>/',
                 '/href=("|\')http:\/\/\[::1\]:5173\/resources\/css\/app\.css("|\')/',
                 '/src=("|\')http:\/\/\[::1\]:5173\/resources\/js\/app\.js("|\')/'
             ], [
+                '',
                 'href="./css/app.css"',
                 'src="./js/app2.js"'
             ], $html);
@@ -115,16 +138,20 @@ class ExportBladeToHtml extends Command
         $this->info('--------------------------------------');
 
         if ($htmlIndex) {
-            if ($this->option('localhost')) {
-                $this->info("HTML index page available at: {$htmlIndex}");
-            } else {
-                $this->info("HTML index page available at: file://{$htmlIndex}");
-            }
-        } else {
-            $this->error("Index page not found.");
+            $protocol = $this->option('localhost') ? 'http://' : 'file://';
+            $this->info("HTML index page available at: {$protocol}{$htmlIndex}");
+            return;
         }
+
+        $this->error("Index page not found.");
     }
 
+    /**
+     * Get all blade files in the directory
+     *
+     * @param string $directory
+     * @return array
+     */
     private function getBladeFiles($directory)
     {
         $iterator = new \RecursiveIteratorIterator(
@@ -146,7 +173,13 @@ class ExportBladeToHtml extends Command
         return $filteredFiles;
     }
 
-
+    /**
+     * Get view name from file path
+     *
+     * @param \SplFileInfo $file
+     * @param string $baseDir
+     * @return string
+     */
     private function getViewName($file, $baseDir)
     {
         $filePath = realpath($file->getPathname());
